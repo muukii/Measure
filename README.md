@@ -5,9 +5,30 @@
 [![License](https://img.shields.io/cocoapods/l/Measure.svg?style=flat)](http://cocoapods.org/pods/Measure)
 [![Platform](https://img.shields.io/cocoapods/p/Measure.svg?style=flat)](http://cocoapods.org/pods/Measure)
 
+`Measure` is **Performance measurement tool**
+
 ## Example
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+```swift
+// set name, threshold (NSTimeInterval)
+var measure = Measure(name: "name of operation", threshold: 1 / 60)
+measure.start()
+
+// Run the process to be measured.
+
+measure.end()
+```
+
+**Output**
+
+```
+[Measure] -> name of operation : 0.0003 sec
+```
+
+if exceeded threshold.
+```
+[Measure] -> name of operation : 0.023 sec [😱exceeded threshold]
+```
 
 ## Requirements
 
