@@ -79,8 +79,6 @@ public struct Measure {
     
     private static func log(text: String) {
         
-        #if DEBUG
-            print("[Measure] -> \(text)")
-        #endif
+        print("[Measure] -> \(text)")
     }
 }
