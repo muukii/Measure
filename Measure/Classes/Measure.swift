@@ -26,34 +26,36 @@ public struct Measure {
     
     public let name: String
     
-    public let threshold: NSTimeInterval?
+    public let threshold: TimeInterval?
     
-    public var time: NSTimeInterval {
+    public var time: TimeInterval {
         
         return endAt.timeIntervalSince1970 - startAt.timeIntervalSince1970
     }
     
-    public init(name: String, threshold: NSTimeInterval? = nil) {
+    public init(name: String, threshold: TimeInterval? = nil) {
         
         self.name = name
         self.threshold = threshold
     }
     
+    @discardableResult
     public mutating func start() -> Measure {
         
-        startAt = NSDate()
+        startAt = Date()
         return self
     }
     
+    @discardableResult
     public mutating func end() -> Measure {
         
-        self.endAt = NSDate()
+        self.endAt = Date()
         
         let warning: String
-        if time > threshold {
+        
+        if let t = threshold, time > t {
             warning = ("[😱Exceeded threshold]")
-        }
-        else {
+        } else {
             warning = ""
         }
         
@@ -62,7 +64,7 @@ public struct Measure {
         return self
     }
     
-    public static func run(name name: String, threshold: NSTimeInterval, @noescape block: () -> Void) -> Measure {
+    public static func run(name: String, threshold: TimeInterval, block: () -> Void) -> Measure {
         
         var measure = Measure(name: name, threshold: threshold)
         measure.start()
@@ -74,10 +76,10 @@ public struct Measure {
     
     // MARK: - Private
     
-    private var startAt: NSDate = NSDate(timeIntervalSince1970: 0)
-    private var endAt: NSDate = NSDate(timeIntervalSince1970: 0)
+    fileprivate var startAt: Date = Date(timeIntervalSince1970: 0)
+    fileprivate var endAt: Date = Date(timeIntervalSince1970: 0)
     
-    private static func log(text: String) {
+    fileprivate static func log(_ text: String) {
         
         print("[Measure] -> \(text)")
     }
