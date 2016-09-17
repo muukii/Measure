@@ -1,0 +1,6 @@
+framework module Measure {
+  umbrella header "Measure-umbrella.h"
+
+  export *
+  module * { export * }
+}
