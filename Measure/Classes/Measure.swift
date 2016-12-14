@@ -20,67 +20,76 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public struct Measure {
-    
-    // MARK: - Public
-    
-    public let name: String
-    
-    public let threshold: TimeInterval?
-    
-    public var time: TimeInterval {
-        
-        return endAt.timeIntervalSince1970 - startAt.timeIntervalSince1970
+public class Measure: Hashable {
+
+  public static func == (lhs: Measure, rhs: Measure) -> Bool {
+    return lhs.hashValue == rhs.hashValue
+  }
+
+  public var hashValue: Int {
+    return ObjectIdentifier(self).hashValue ^ name.hashValue
+  }
+
+  // MARK: - Properties
+
+  public let name: String
+
+  public let threshold: TimeInterval?
+
+  public var time: TimeInterval {
+
+    return endAt.timeIntervalSince1970 - startAt.timeIntervalSince1970
+  }
+
+
+  private var startAt: Date = Date(timeIntervalSince1970: 0)
+  private var endAt: Date = Date(timeIntervalSince1970: 0)
+
+  // MARK: - Initializers
+
+  public init(name: String, threshold: TimeInterval? = nil) {
+
+    self.name = name
+    self.threshold = threshold
+  }
+
+  @discardableResult
+  public func start() -> Measure {
+
+    startAt = Date()
+    return self
+  }
+
+  @discardableResult
+  public func end() -> Measure {
+
+    self.endAt = Date()
+
+    let warning: String
+
+    if let t = threshold, time > t {
+      warning = ("[😱Exceeded threshold]")
+    } else {
+      warning = ""
     }
-    
-    public init(name: String, threshold: TimeInterval? = nil) {
-        
-        self.name = name
-        self.threshold = threshold
-    }
-    
-    @discardableResult
-    public mutating func start() -> Measure {
-        
-        startAt = Date()
-        return self
-    }
-    
-    @discardableResult
-    public mutating func end() -> Measure {
-        
-        self.endAt = Date()
-        
-        let warning: String
-        
-        if let t = threshold, time > t {
-            warning = ("[😱Exceeded threshold]")
-        } else {
-            warning = ""
-        }
-        
-        Measure.log("\(name) : \(time) sec \(warning)")
-        
-        return self
-    }
-    
-    public static func run(name: String, threshold: TimeInterval, block: () -> Void) -> Measure {
-        
-        var measure = Measure(name: name, threshold: threshold)
-        measure.start()
-        block()
-        measure.end()
-        
-        return measure
-    }
-    
-    // MARK: - Private
-    
-    fileprivate var startAt: Date = Date(timeIntervalSince1970: 0)
-    fileprivate var endAt: Date = Date(timeIntervalSince1970: 0)
-    
-    fileprivate static func log(_ text: String) {
-        
-        print("[Measure] -> \(text)")
-    }
+
+    Measure.log("\(name) : \(time) sec \(warning)")
+
+    return self
+  }
+
+  public static func run(name: String, threshold: TimeInterval, block: () -> Void) -> Measure {
+
+    let measure = Measure(name: name, threshold: threshold)
+    measure.start()
+    block()
+    measure.end()
+
+    return measure
+  }
+
+  fileprivate static func log(_ text: String) {
+
+    print("[Measure] -> \(text)")
+  }
 }
