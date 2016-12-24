@@ -20,6 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+public protocol MeasureLoggerType: class {
+  func didEndMeasurement(result: Measure.Result)
+}
+
 open class Measure: Hashable {
 
   public struct Result {
@@ -29,6 +33,10 @@ open class Measure: Hashable {
     public let time: TimeInterval
     public let threshold: TimeInterval?
     public let isThresholdExceeded: Bool
+
+    public let file: String
+    public let function: String
+    public let line: UInt
   }
 
   public static func == (lhs: Measure, rhs: Measure) -> Bool {
@@ -41,6 +49,10 @@ open class Measure: Hashable {
 
   // MARK: - Properties
 
+  open static var defaultLogger: MeasureLoggerType?
+
+  open var logger: MeasureLoggerType? = Measure.defaultLogger
+
   open let name: String
 
   open var threshold: TimeInterval?
@@ -49,12 +61,19 @@ open class Measure: Hashable {
 
   open var endAt: Date?
 
+  public let file: String
+  public let function: String
+  public let line: UInt
+
   // MARK: - Initializers
 
-  public required init(name: String, threshold: TimeInterval? = nil) {
+  public required init(name: String, threshold: TimeInterval? = nil, file: String = #file, function: String = #function, line: UInt = #line) {
 
     self.name = name
     self.threshold = threshold
+    self.file = file
+    self.function = function
+    self.line = line
   }
 
   @discardableResult
@@ -77,7 +96,11 @@ open class Measure: Hashable {
         endAt: Date(),
         time: 0,
         threshold: nil,
-        isThresholdExceeded: false)
+        isThresholdExceeded: false,
+        file: file,
+        function: function,
+        line: line
+      )
     }
 
     endAt = _endAt
@@ -92,7 +115,17 @@ open class Measure: Hashable {
       isThresholdExceeded = false
     }
 
-    return Result(name: name, startAt: startAt, endAt: _endAt, time: time, threshold: threshold, isThresholdExceeded: isThresholdExceeded)
+    return Result(
+      name: name,
+      startAt: startAt,
+      endAt: _endAt,
+      time: time,
+      threshold: threshold,
+      isThresholdExceeded: isThresholdExceeded,
+      file: file,
+      function: function,
+      line: line
+    )
   }
 
   @discardableResult
