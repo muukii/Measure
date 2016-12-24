@@ -20,17 +20,6 @@ measure.start()
 measure.end()
 ```
 
-**Output**
-
-```
-[Measure] -> name of operation : 0.0003 sec
-```
-
-if exceeded threshold.
-```
-[Measure] -> name of operation : 0.023 sec [😱exceeded threshold]
-```
-
 ## Requirements
 
 ## Installation
