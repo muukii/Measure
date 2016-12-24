@@ -115,7 +115,7 @@ open class Measure: Hashable {
       isThresholdExceeded = false
     }
 
-    return Result(
+    let result = Result(
       name: name,
       startAt: startAt,
       endAt: _endAt,
@@ -126,6 +126,10 @@ open class Measure: Hashable {
       function: function,
       line: line
     )
+
+    logger?.didEndMeasurement(result: result)
+
+    return result
   }
 
   @discardableResult
