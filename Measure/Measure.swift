@@ -139,7 +139,7 @@ open class Measure: Hashable {
     return self
   }
 
-  open class func run(name: String, threshold: TimeInterval, block: () -> Void) -> Result {
+  open class func run(name: String, threshold: TimeInterval?, block: () -> Void) -> Result {
 
     let measure = self.init(name: name, threshold: threshold)
     measure.start()
