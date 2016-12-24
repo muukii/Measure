@@ -20,7 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public class Measure: Hashable {
+open class Measure: Hashable {
+
+  public struct Result {
+    public let name: String
+    public let startAt: Date
+    public let endAt: Date
+    public let time: TimeInterval
+    public let threshold: TimeInterval?
+    public let isThresholdExceeded: Bool
+  }
 
   public static func == (lhs: Measure, rhs: Measure) -> Bool {
     return lhs.hashValue == rhs.hashValue
@@ -32,64 +41,72 @@ public class Measure: Hashable {
 
   // MARK: - Properties
 
-  public let name: String
+  open let name: String
 
-  public let threshold: TimeInterval?
+  open var threshold: TimeInterval?
 
-  public var time: TimeInterval {
+  open var startAt: Date?
 
-    return endAt.timeIntervalSince1970 - startAt.timeIntervalSince1970
-  }
-
-
-  private var startAt: Date = Date(timeIntervalSince1970: 0)
-  private var endAt: Date = Date(timeIntervalSince1970: 0)
+  open var endAt: Date?
 
   // MARK: - Initializers
 
-  public init(name: String, threshold: TimeInterval? = nil) {
+  public required init(name: String, threshold: TimeInterval? = nil) {
 
     self.name = name
     self.threshold = threshold
   }
 
   @discardableResult
-  public func start() -> Measure {
+  open func start() -> Measure {
 
     startAt = Date()
     return self
   }
 
   @discardableResult
-  public func end() -> Measure {
+  open func end() -> Result {
 
-    self.endAt = Date()
+    let _endAt = Date()
 
-    let warning: String
-
-    if let t = threshold, time > t {
-      warning = ("[😱Exceeded threshold]")
-    } else {
-      warning = ""
+    guard let startAt = startAt else {
+      assertionFailure("Measurement has not begun, please call start()")
+      return Result(
+        name: name + " :: Measurement has not begun, please call start()",
+        startAt: Date(),
+        endAt: Date(),
+        time: 0,
+        threshold: nil,
+        isThresholdExceeded: false)
     }
 
-    Measure.log("\(name) : \(time) sec \(warning)")
+    endAt = _endAt
 
+    let time = _endAt.timeIntervalSinceReferenceDate - startAt.timeIntervalSinceReferenceDate
+
+    let isThresholdExceeded: Bool
+
+    if let t = threshold, time > t {
+      isThresholdExceeded = true
+    } else {
+      isThresholdExceeded = false
+    }
+
+    return Result(name: name, startAt: startAt, endAt: _endAt, time: time, threshold: threshold, isThresholdExceeded: isThresholdExceeded)
+  }
+
+  @discardableResult
+  open func reset() -> Self {
+    startAt = nil
+    endAt = nil
     return self
   }
 
-  public static func run(name: String, threshold: TimeInterval, block: () -> Void) -> Measure {
+  open class func run(name: String, threshold: TimeInterval, block: () -> Void) -> Result {
 
-    let measure = Measure(name: name, threshold: threshold)
+    let measure = self.init(name: name, threshold: threshold)
     measure.start()
     block()
-    measure.end()
-
-    return measure
-  }
-
-  fileprivate static func log(_ text: String) {
-
-    print("[Measure] -> \(text)")
+    return measure.end()
   }
 }

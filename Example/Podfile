@@ -1,6 +1,0 @@
-use_frameworks!
-target 'Measure_Tests' do
-  pod 'Measure', :path => '../'
-  
-  
-end
