@@ -28,8 +28,8 @@ open class Measure: Hashable {
 
   public struct Result {
     public let name: String
-    public let startAt: Date
-    public let endAt: Date
+    public let startAt: TimeInterval
+    public let endAt: TimeInterval
     public let time: TimeInterval
     public let threshold: TimeInterval?
     public let isThresholdExceeded: Bool
@@ -57,9 +57,9 @@ open class Measure: Hashable {
 
   open var threshold: TimeInterval?
 
-  open var startAt: Date?
+  open var startAt: TimeInterval?
 
-  open var endAt: Date?
+  open var endAt: TimeInterval?
 
   public let file: String
   public let function: String
@@ -79,21 +79,21 @@ open class Measure: Hashable {
   @discardableResult
   open func start() -> Measure {
 
-    startAt = Date()
+    startAt = CACurrentMediaTime()
     return self
   }
 
   @discardableResult
   open func end() -> Result {
 
-    let _endAt = Date()
+    let _endAt = CACurrentMediaTime()
 
     guard let startAt = startAt else {
       assertionFailure("Measurement has not begun, please call start()")
       return Result(
         name: name + " :: Measurement has not begun, please call start()",
-        startAt: Date(),
-        endAt: Date(),
+        startAt: TimeInterval(),
+        endAt: TimeInterval(),
         time: 0,
         threshold: nil,
         isThresholdExceeded: false,
@@ -105,7 +105,7 @@ open class Measure: Hashable {
 
     endAt = _endAt
 
-    let time = _endAt.timeIntervalSinceReferenceDate - startAt.timeIntervalSinceReferenceDate
+    let time = _endAt - startAt
 
     let isThresholdExceeded: Bool
 
