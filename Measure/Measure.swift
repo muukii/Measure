@@ -20,15 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+public protocol MeasureLoggerType: class {
+  func didEndMeasurement(result: Measure.Result)
+}
+
 open class Measure: Hashable {
 
   public struct Result {
     public let name: String
-    public let startAt: TimeInterval
-    public let endAt: TimeInterval
+    public let startAt: Date
+    public let endAt: Date
     public let time: TimeInterval
     public let threshold: TimeInterval?
     public let isThresholdExceeded: Bool
+
+    public let file: String
+    public let function: String
+    public let line: UInt
   }
 
   public static func == (lhs: Measure, rhs: Measure) -> Bool {
@@ -41,48 +49,63 @@ open class Measure: Hashable {
 
   // MARK: - Properties
 
+  open static var defaultLogger: MeasureLoggerType?
+
+  open var logger: MeasureLoggerType? = Measure.defaultLogger
+
   open let name: String
 
   open var threshold: TimeInterval?
 
-  open var startAt: TimeInterval?
+  open var startAt: Date?
 
-  open var endAt: TimeInterval?
+  open var endAt: Date?
+
+  public let file: String
+  public let function: String
+  public let line: UInt
 
   // MARK: - Initializers
 
-  public required init(name: String, threshold: TimeInterval? = nil) {
+  public required init(name: String, threshold: TimeInterval? = nil, file: String = #file, function: String = #function, line: UInt = #line) {
 
     self.name = name
     self.threshold = threshold
+    self.file = file
+    self.function = function
+    self.line = line
   }
 
   @discardableResult
   open func start() -> Measure {
 
-    startAt = CACurrentMediaTime()
+    startAt = Date()
     return self
   }
 
   @discardableResult
   open func end() -> Result {
 
-    let _endAt = CACurrentMediaTime()
+    let _endAt = Date()
 
     guard let startAt = startAt else {
       assertionFailure("Measurement has not begun, please call start()")
       return Result(
         name: name + " :: Measurement has not begun, please call start()",
-        startAt: CACurrentMediaTime(),
-        endAt: CACurrentMediaTime(),
+        startAt: Date(),
+        endAt: Date(),
         time: 0,
         threshold: nil,
-        isThresholdExceeded: false)
+        isThresholdExceeded: false,
+        file: file,
+        function: function,
+        line: line
+      )
     }
 
     endAt = _endAt
 
-    let time = _endAt - startAt
+    let time = _endAt.timeIntervalSinceReferenceDate - startAt.timeIntervalSinceReferenceDate
 
     let isThresholdExceeded: Bool
 
@@ -92,7 +115,21 @@ open class Measure: Hashable {
       isThresholdExceeded = false
     }
 
-    return Result(name: name, startAt: startAt, endAt: _endAt, time: time, threshold: threshold, isThresholdExceeded: isThresholdExceeded)
+    let result = Result(
+      name: name,
+      startAt: startAt,
+      endAt: _endAt,
+      time: time,
+      threshold: threshold,
+      isThresholdExceeded: isThresholdExceeded,
+      file: file,
+      function: function,
+      line: line
+    )
+
+    logger?.didEndMeasurement(result: result)
+
+    return result
   }
 
   @discardableResult
@@ -102,7 +139,7 @@ open class Measure: Hashable {
     return self
   }
 
-  open class func run(name: String, threshold: TimeInterval, block: () -> Void) -> Result {
+  open class func run(name: String, threshold: TimeInterval?, block: () -> Void) -> Result {
 
     let measure = self.init(name: name, threshold: threshold)
     measure.start()
