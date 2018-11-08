@@ -49,11 +49,11 @@ open class Measure: Hashable {
 
   // MARK: - Properties
 
-  open static var defaultLogger: MeasureLoggerType?
+  public static var defaultLogger: MeasureLoggerType?
 
   open var logger: MeasureLoggerType? = Measure.defaultLogger
 
-  open let name: String
+  public let name: String
 
   open var threshold: TimeInterval?
 
