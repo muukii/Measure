@@ -20,90 +20,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public protocol MeasureLoggerType: class {
-  func didEndMeasurement(result: Measure.Result)
-}
-
-open class Measure: Hashable {
-
-  public struct Result {
-    public let name: String
-    public let startAt: TimeInterval
-    public let endAt: TimeInterval
-    public let time: TimeInterval
-    public let threshold: TimeInterval?
-    public let isThresholdExceeded: Bool
-
-    public let file: String
-    public let function: String
-    public let line: UInt
-  }
-
-  public static func == (lhs: Measure, rhs: Measure) -> Bool {
-    return lhs.hashValue == rhs.hashValue
-  }
-
-  public var hashValue: Int {
-    return ObjectIdentifier(self).hashValue ^ name.hashValue
-  }
+public struct MeasureStartPost: Hashable {
 
   // MARK: - Properties
 
-  public static var defaultLogger: MeasureLoggerType?
-
-  open var logger: MeasureLoggerType? = Measure.defaultLogger
-
   public let name: String
 
-  open var threshold: TimeInterval?
+  public let threshold: TimeInterval?
 
-  open var startAt: TimeInterval?
+  private(set) public var startedAt: TimeInterval?
 
-  open var endAt: TimeInterval?
-
-  public let file: String
-  public let function: String
-  public let line: UInt
+  public let metadata: MeasureMetadata
 
   // MARK: - Initializers
 
-  public required init(name: String, threshold: TimeInterval? = nil, file: String = #file, function: String = #function, line: UInt = #line) {
+  public init(name: String, threshold: TimeInterval? = nil, file: String = #file, function: String = #function, line: UInt = #line) {
 
     self.name = name
     self.threshold = threshold
-    self.file = file
-    self.function = function
-    self.line = line
+    self.metadata = MeasureMetadata(file: file, function: function, line: line)
   }
 
-  @discardableResult
-  open func start() -> Measure {
+  public func start() -> MeasureStartPost {
 
-    startAt = CACurrentMediaTime()
-    return self
+    var _self = self
+    _self.startedAt = CACurrentMediaTime()
+    return _self
   }
 
-  @discardableResult
-  open func end() -> Result {
+  public func end(label: String? = nil, file: String = #file, function: String = #function, line: UInt = #line) -> MeasureEndPost {
 
     let _endAt = CACurrentMediaTime()
 
-    guard let startAt = startAt else {
+    let endPostMetadata = MeasureMetadata(file: file, function: function, line: line)
+
+    guard let startAt = startedAt else {
       assertionFailure("Measurement has not begun, please call start()")
-      return Result(
+      return MeasureEndPost(
         name: name + " :: Measurement has not begun, please call start()",
+        endLabel: label,
         startAt: TimeInterval(),
         endAt: TimeInterval(),
         time: 0,
         threshold: nil,
         isThresholdExceeded: false,
-        file: file,
-        function: function,
-        line: line
+        startPostMetadata: metadata,
+        endPostMetadata: endPostMetadata
       )
     }
-
-    endAt = _endAt
 
     let time = _endAt - startAt
 
@@ -115,35 +79,59 @@ open class Measure: Hashable {
       isThresholdExceeded = false
     }
 
-    let result = Result(
+    let result = MeasureEndPost(
       name: name,
+      endLabel: label,
       startAt: startAt,
       endAt: _endAt,
       time: time,
       threshold: threshold,
       isThresholdExceeded: isThresholdExceeded,
-      file: file,
-      function: function,
-      line: line
+      startPostMetadata: metadata,
+      endPostMetadata: endPostMetadata
     )
-
-    logger?.didEndMeasurement(result: result)
 
     return result
   }
 
-  @discardableResult
-  open func reset() -> Self {
-    startAt = nil
-    endAt = nil
-    return self
+}
+
+public struct MeasureMetadata: Hashable {
+  public let file: String
+  public let function: String
+  public let line: UInt
+}
+
+public struct MeasureEndPost: CustomStringConvertible {
+
+  public let name: String
+  public let endLabel: String?
+  public let startAt: TimeInterval
+  public let endAt: TimeInterval
+  public let time: TimeInterval
+  public let threshold: TimeInterval?
+  public let isThresholdExceeded: Bool
+
+  public let startPostMetadata: MeasureMetadata
+  public let endPostMetadata: MeasureMetadata
+
+  public func print() {
+
+    Swift.print(
+      renderResultText()
+    )
   }
 
-  open class func run(name: String, threshold: TimeInterval?, block: () -> Void) -> Result {
+  public var description: String {
+    renderResultText()
+  }
 
-    let measure = self.init(name: name, threshold: threshold)
-    measure.start()
-    block()
-    return measure.end()
+  private func renderResultText() -> String {
+    return """
+      ⏱ [Measure] \(name)
+      ⇤ \(String(startPostMetadata.file.suffix(40))):\(startPostMetadata.line)
+      ⇥ \(String(endPostMetadata.file.suffix(40))):\(endPostMetadata.line) \(endLabel ?? "")
+      ↳ \(time * 1000) ms \(isThresholdExceeded ? "⚠️" : "✅")
+      """
   }
 }
