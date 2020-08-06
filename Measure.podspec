@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Measure'
-  s.version          = '0.6.0'
+  s.version          = '0.7.0'
   s.summary          = 'Performance measurement tool'
   s.homepage         = 'https://github.com/muukii/Measure'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
